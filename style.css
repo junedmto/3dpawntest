@@ -7,6 +7,6 @@
   text-align: center;
   font-size: 2rem;       /* makes it bigger, adjust as needed */
   font-family: sans-serif; /* changes to sans serif font */
-  /*color: white;          /* optional: set text color */
+  color: white;          /* optional: set text color */
   z-index: 100;
 }
