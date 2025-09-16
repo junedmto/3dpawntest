@@ -11,73 +11,109 @@
   </style>
 </head>
   
-<body>
+	<body>
 
-<div id="info">Test</div>
-  
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r126/three.min.js" integrity="sha512-n8IpKWzDnBOcBhRlHirMZOUvEq2bLRMuJGjuVqbzUJwtTsgwOgK5aS0c1JA647XWYfqvXve8k3PtZdzpipFjgg==" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/three@0.126.0/examples/js/loaders/GLTFLoader.js"></script>
+		<div id="info">Test</div>
 
-<script>
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xdedede);
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r126/three.min.js" integrity="sha512-n8IpKWzDnBOcBhRlHirMZOUvEq2bLRMuJGjuVqbzUJwtTsgwOgK5aS0c1JA647XWYfqvXve8k3PtZdzpipFjgg==" crossorigin="anonymous"></script>
+		<script src="https://unpkg.com/three@0.126.0/examples/js/loaders/GLTFLoader.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/three@0.126.0/examples/js/controls/OrbitControls.js"></script>
 
-  const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 100);
-  camera.position.set(0, 0, 5);
+		<script>
+		  const scene = new THREE.Scene();
+		  scene.background = new THREE.Color(0xdedede);
 
-  const renderer = new THREE.WebGLRenderer({antialias: true});
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  document.body.appendChild(renderer.domElement);
+		  const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 100);
+		  camera.position.set(0, 0, 5);
 
-  // Lights
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-  directionalLight.position.set(5, 5, 5);
-  scene.add(directionalLight);
+		  const renderer = new THREE.WebGLRenderer({antialias: true});
+		  renderer.setSize(window.innerWidth, window.innerHeight);
+		  document.body.appendChild(renderer.domElement);
+			renderer.shadowMap.enabled = true;	// shadows ON
+			
 
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-  scene.add(ambientLight);
+			//----------------------------------------------------------------------------------------
+			
+		// Orbit Controls
+			
+			const controls = new THREE.OrbitControls(camera, renderer.domElement);
+			controls.enableDamping = true;  // smooth motion
+			controls.dampingFactor = 0.05;
+			controls.screenSpacePanning = false;
+			controls.minDistance = 1;   // zoom limits
+			controls.maxDistance = 20;
+			controls.maxPolarAngle = Math.PI / 2; // limit vertical angle (optional)
 
-  // Load model
-  const loader = new THREE.GLTFLoader();
-  let model;
+		  // Lights
+		  const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+		  directionalLight.position.set(5, 5, 5);
+			directionalLight.castShadow = true;
+		  scene.add(directionalLight);
+			
 
-  loader.load('pawn.glb',
-    function(gltf) {
-      model = gltf.scene;
-      scene.add(model);
+		  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+		  scene.add(ambientLight);
 
-      // Center model
-      const box = new THREE.Box3().setFromObject(model);
-      const center = box.getCenter(new THREE.Vector3());
-      model.position.sub(center);
-    },
-    undefined,
-    function(error) {
-      console.error('Error loading model:', error);
-    }
-  );
+		  // Load model
+		  const loader = new THREE.GLTFLoader();
+		  let model;
 
-  // Animate (auto rotate model)
-  function animate() {
-    requestAnimationFrame(animate);
+		  loader.load('pawn.glb',
+      function(gltf) {
+        model = gltf.scene;
+        scene.add(model);
 
-    if (model) {
-      model.rotation.y += 0.005;  // rotate slowly on Y axis
-    }
+        // Center model
+        const box = new THREE.Box3().setFromObject(model);
+        const center = box.getCenter(new THREE.Vector3());
+        model.position.sub(center);
 
-    renderer.render(scene, camera);
-  }
+        // Shadows on model (done only after model exists)
+        model.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+      },
+      undefined,
+      function(error) {
+        console.error('Error loading model:', error);
+      }
+    );
+			
+			// Floor (large plane)
+			const floorGeometry = new THREE.PlaneGeometry(20, 20);  // width, depth
+			const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
+			const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+			floor.rotation.x = -Math.PI / 2;  // lay flat
+			floor.position.y = -1.8;  // move it below your pawn
+			floor.receiveShadow = true; // receives shadows
+			scene.add(floor);
+			
+			
+			
+			//----------------------------------------------------------------------------------------
 
-  animate();
+		  // Animate (auto rotate model)
+		  function animate() {
+			requestAnimationFrame(animate);
+			
+			  controls.update(); // required for damping to work
 
-  // Resize handling
-  window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth/window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  });
-</script>
+			renderer.render(scene, camera);
+		  }
 
-</body>
+		  animate();
+
+		  // Resize handling
+		  window.addEventListener('resize', () => {
+			camera.aspect = window.innerWidth/window.innerHeight;
+			camera.updateProjectionMatrix();
+			renderer.setSize(window.innerWidth, window.innerHeight);
+		  });
+		</script>
+
+	</body>
   
 </html>
